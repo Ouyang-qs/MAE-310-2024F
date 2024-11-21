@@ -86,6 +86,7 @@ d_temp = K \ F;
 disp = [d_temp; g];
 
 % Postprocessing: visualization
+
 %plot(x_coor, disp, '--r','LineWidth',3);
 
 %x_sam = 0 : 0.01 : 1;
@@ -95,6 +96,7 @@ disp = [d_temp; g];
 
 n_sam = 20;
 xi_sam = -1 : (2/n_sam) : 1;
+% xi_sam = linspace(-1,1,n_sam+1);
 
 x_sam = zeros(n_el * n_sam + 1, 1);
 y_sam = x_sam; % store the exact solution value at sampling points
@@ -125,9 +127,9 @@ for ee = 1 : n_el
 end
 
 
-plot(x_sam, u_sam, '-r','LineWidth',3);
+plot(x_sam, u_sam, '-r','LineWidth',2);
 hold on;
-plot(x_sam, y_sam, '-k','LineWidth',3);
+plot(x_sam, y_sam, '-k','LineWidth',2);
 
 
 
