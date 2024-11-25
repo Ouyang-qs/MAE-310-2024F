@@ -6,7 +6,7 @@ g = 1.0;           % u    = g  at x = 1
 h = 0.0;           % -u,x = h  at x = 0
 
 % Setup the mesh
-pp   = 2;              % polynomial degree
+pp   = 1;              % polynomial degree
 n_en = pp + 1;         % number of element or local nodes
 n_el = 2;              % number of elements
 n_np = n_el * pp + 1;  % number of nodal points
@@ -112,12 +112,35 @@ for ee = 1 : n_el
     n_sam_end = n_sam;
   end
 
+  % quadrature loop
+  for qua = 1 : n_int    
+    dx_dxi = 0.0;
+    x_l = 0.0;
+    for aa = 1 : n_en
+      x_l    = x_l    + x_ele(aa) * PolyShape(pp, aa, xi(qua), 0);
+      dx_dxi = dx_dxi + x_ele(aa) * PolyShape(pp, aa, xi(qua), 1);
+    end
+    dxi_dx = 1.0 / dx_dxi;
+
+    for aa = 1 : n_en
+      f_ele(aa) = f_ele(aa) + weight(qua) * PolyShape(pp, aa, xi(qua), 0) * f(x_l) * dx_dxi;
+      for bb = 1 : n_en
+        k_ele(aa, bb) = k_ele(aa, bb) + weight(qua) * PolyShape(pp, aa, xi(qua), 1) * PolyShape(pp, bb, xi(qua), 1) * dxi_dx;
+      end
+    end
+  end
+  %
+
   for ll = 1 : n_sam_end
     x_l = 0.0;
     u_l = 0.0;
     for aa = 1 : n_en
       x_l = x_l + x_ele(aa) * PolyShape(pp, aa, xi_sam(ll), 0);
       u_l = u_l + u_ele(aa) * PolyShape(pp, aa, xi_sam(ll), 0);
+
+      u_l_x = u_l_x + u_ele(aa) * PolyShape(pp, aa, xi_sam(ll), 1);
+
+
     end
 
     x_sam( (ee-1)*n_sam + ll ) = x_l;
