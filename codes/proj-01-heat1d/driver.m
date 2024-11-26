@@ -102,6 +102,7 @@ x_sam = zeros(n_el * n_sam + 1, 1);
 y_sam = x_sam; % store the exact solution value at sampling points
 u_sam = x_sam; % store the numerical solution value at sampling pts
 
+El2=0;
 for ee = 1 : n_el
   x_ele = x_coor( IEN(ee, :) );
   u_ele = disp( IEN(ee, :) );
@@ -121,38 +122,47 @@ for ee = 1 : n_el
       dx_dxi = dx_dxi + x_ele(aa) * PolyShape(pp, aa, xi(qua), 1);
     end
     dxi_dx = 1.0 / dx_dxi;
-
+    el2=zeros(n_en,1);
     for aa = 1 : n_en
-      f_ele(aa) = f_ele(aa) + weight(qua) * PolyShape(pp, aa, xi(qua), 0) * f(x_l) * dx_dxi;
-      for bb = 1 : n_en
-        k_ele(aa, bb) = k_ele(aa, bb) + weight(qua) * PolyShape(pp, aa, xi(qua), 1) * PolyShape(pp, bb, xi(qua), 1) * dxi_dx;
-      end
+      el2(aa) = el2(aa) + weight(qua) * ( x_l^5 - PolyShape(pp, aa, xi(qua), 0) )^2 * dx_dxi;
+    end
+  end
+
+  % Assembly local integral based on the ID or LM data
+  
+  for aa = 1 : n_en
+    P = ID(IEN(ee,aa));
+
+    if(P > 0)
+      El2 = El2 + el2(aa);
     end
   end
   %
-
-  for ll = 1 : n_sam_end
-    x_l = 0.0;
-    u_l = 0.0;
-    for aa = 1 : n_en
-      x_l = x_l + x_ele(aa) * PolyShape(pp, aa, xi_sam(ll), 0);
-      u_l = u_l + u_ele(aa) * PolyShape(pp, aa, xi_sam(ll), 0);
-
-      u_l_x = u_l_x + u_ele(aa) * PolyShape(pp, aa, xi_sam(ll), 1);
-
-
-    end
-
-    x_sam( (ee-1)*n_sam + ll ) = x_l;
-    u_sam( (ee-1)*n_sam + ll ) = u_l;
-    y_sam( (ee-1)*n_sam + ll ) = x_l^5;
-  end
+  El2
+  % for ll = 1 : n_sam_end
+  %   x_l = 0.0;
+  %   u_l = 0.0;
+  %   for aa = 1 : n_en
+  %     x_l = x_l + x_ele(aa) * PolyShape(pp, aa, xi_sam(ll), 0);
+  %     u_l = u_l + u_ele(aa) * PolyShape(pp, aa, xi_sam(ll), 0);
+  % 
+  %     u_l_x = u_l_x + u_ele(aa) * PolyShape(pp, aa, xi_sam(ll), 1);
+  % 
+  %   end
+  % 
+  %   x_sam( (ee-1)*n_sam + ll ) = x_l;
+  %   u_sam( (ee-1)*n_sam + ll ) = u_l;
+  %   y_sam( (ee-1)*n_sam + ll ) = x_l^5;
+  % 
+  % 
+  % 
+  % end
 end
 
 
-plot(x_sam, u_sam, '-r','LineWidth',2);
-hold on;
-plot(x_sam, y_sam, '-k','LineWidth',2);
+% plot(x_sam, u_sam, '-r','LineWidth',2);
+% hold on;
+% plot(x_sam, y_sam, '-k','LineWidth',2);
 
 
 
