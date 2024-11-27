@@ -1,4 +1,4 @@
-clear all; clc; clf; % clean the memory, screen, and figure
+clear all; clc; clf;  % clean the memory, screen, and figure
 
 % Problem definition
 f = @(x) -20*x.^3; % f(x) is the source
@@ -101,8 +101,19 @@ xi_sam = -1 : (2/n_sam) : 1;
 x_sam = zeros(n_el * n_sam + 1, 1);
 y_sam = x_sam; % store the exact solution value at sampling points
 u_sam = x_sam; % store the numerical solution value at sampling pts
+y_x_sam = x_sam;
+u_x_sam = x_sam;
 
-El2=0;
+el2_n = zeros(n_el,1); % numerator
+el2_d = el2_n;         % denominator
+El2_n = 0;
+El2_d = 0;
+
+eh2_n = zeros(n_el,1); % numerator
+eh2_d = el2_n;         % denominator
+Eh2_n = 0;
+Eh2_d = 0;
+
 for ee = 1 : n_el
   x_ele = x_coor( IEN(ee, :) );
   u_ele = disp( IEN(ee, :) );
@@ -116,55 +127,61 @@ for ee = 1 : n_el
   % quadrature loop
   for qua = 1 : n_int    
     dx_dxi = 0.0;
-    x_l = 0.0;
+    x_l    = 0.0;
+    u_l    = 0.0;
+    u_l_x  = 0.0;
     for aa = 1 : n_en
-      x_l    = x_l    + x_ele(aa) * PolyShape(pp, aa, xi(qua), 0);
+      x_l    = x_l    + x_ele(aa) * PolyShape(pp, aa, xi(qua), 0); % x for quadrature rule
       dx_dxi = dx_dxi + x_ele(aa) * PolyShape(pp, aa, xi(qua), 1);
+      u_l    = u_l    + u_ele(aa) * PolyShape(pp, aa, xi(qua), 0);
+      u_l_x  = u_l_x  + u_ele(aa) * PolyShape(pp, aa, xi(qua), 1);
     end
     dxi_dx = 1.0 / dx_dxi;
-    el2=zeros(n_en,1);
+    y_l    = x_l^5;
+    y_l_x  = 5*x_l^4;
+
+    el2_n(ee) = el2_n(ee) + weight(qua) * ( u_l - y_l )^2 * dx_dxi;
+    el2_d(ee) = el2_d(ee) + weight(qua) * ( y_l )^2 * dx_dxi;
+
+    eh2_n(ee) = eh2_n(ee) + weight(qua) * ( u_l_x - y_l_x )^2 * dxi_dx;
+    eh2_d(ee) = eh2_d(ee) + weight(qua) * ( y_l_x )^2 * dxi_dx;
+
+  end
+
+  % Assembly local integral
+  El2_n = El2_n + el2_n(ee); 
+  El2_d = El2_d + el2_d(ee);
+  Eh2_n = Eh2_n + eh2_n(ee);
+  Eh2_d = Eh2_d + eh2_d(ee);
+
+  for ll = 1 : n_sam_end
+    x_l = 0.0;
+    u_l = 0.0;
+    u_l_x = 0.0;
     for aa = 1 : n_en
-      el2(aa) = el2(aa) + weight(qua) * ( x_l^5 - PolyShape(pp, aa, xi(qua), 0) )^2 * dx_dxi;
+      x_l   = x_l   + x_ele(aa) * PolyShape(pp, aa, xi_sam(ll), 0);
+      u_l   = u_l   + u_ele(aa) * PolyShape(pp, aa, xi_sam(ll), 0);
+      u_l_x = u_l_x + u_ele(aa) * PolyShape(pp, aa, xi_sam(ll), 1);
     end
-  end
 
-  % Assembly local integral based on the ID or LM data
-  
-  for aa = 1 : n_en
-    P = ID(IEN(ee,aa));
-
-    if(P > 0)
-      El2 = El2 + el2(aa);
-    end
+    x_sam( (ee-1)*n_sam + ll ) = x_l;
+    u_sam( (ee-1)*n_sam + ll ) = u_l;
+    y_sam( (ee-1)*n_sam + ll ) = x_l^5;
+    u_x_sam( (ee-1)*n_sam + ll ) = u_l_x;
+    y_x_sam( (ee-1)*n_sam + ll ) = 5*x_l^4;
   end
-  %
-  El2
-  % for ll = 1 : n_sam_end
-  %   x_l = 0.0;
-  %   u_l = 0.0;
-  %   for aa = 1 : n_en
-  %     x_l = x_l + x_ele(aa) * PolyShape(pp, aa, xi_sam(ll), 0);
-  %     u_l = u_l + u_ele(aa) * PolyShape(pp, aa, xi_sam(ll), 0);
-  % 
-  %     u_l_x = u_l_x + u_ele(aa) * PolyShape(pp, aa, xi_sam(ll), 1);
-  % 
-  %   end
-  % 
-  %   x_sam( (ee-1)*n_sam + ll ) = x_l;
-  %   u_sam( (ee-1)*n_sam + ll ) = u_l;
-  %   y_sam( (ee-1)*n_sam + ll ) = x_l^5;
-  % 
-  % 
-  % 
-  % end
 end
 
+plot(x_sam, u_sam, '-r','LineWidth',2);
+hold on;
+plot(x_sam, y_sam, '-k','LineWidth',2);
 
-% plot(x_sam, u_sam, '-r','LineWidth',2);
-% hold on;
-% plot(x_sam, y_sam, '-k','LineWidth',2);
+plot(x_sam, u_x_sam, '-b','LineWidth',2); % ？
+hold on;
+plot(x_sam, y_x_sam, '-k','LineWidth',2);
 
-
+El2 = sqrt(El2_n/El2_d);
+Eh2 = sqrt(Eh2_n/Eh2_d);
 
 
 
