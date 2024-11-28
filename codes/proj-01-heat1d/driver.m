@@ -6,13 +6,13 @@ g = 1.0;           % u    = g  at x = 1
 h = 0.0;           % -u,x = h  at x = 0
 
 % Setup the mesh
-pp   = 1;              % polynomial degree
+pp   = 3;              % polynomial degree
 n_en = pp + 1;         % number of element or local nodes
 
 El2 = zeros(8,1);
 Eh1 = El2;
 hh  = zeros(8,1);
-for s = 1:1                % n_el = 2,4...16
+for s = 1:8                % n_el = 2,4...16
     n_el = 2*s;            % number of elements
     n_np = n_el * pp + 1;  % number of nodal points
     n_eq = n_np - 1;       % number of equations
@@ -98,7 +98,8 @@ for s = 1:1                % n_el = 2,4...16
 
     % plot(x_coor,diff,'b','LineWidth',1);
 
-    % Postprocessing: visualization
+    
+    %% Postprocessing: visualization
 
     %plot(x_coor, disp, '--r','LineWidth',3);
 
@@ -137,19 +138,26 @@ for s = 1:1                % n_el = 2,4...16
             n_sam_end = n_sam;
         end
 
-        % quadrature loop
+        %quadrature loop
         for qua = 1 : n_int
             dx_dxi = 0.0;
             x_l    = 0.0;
             u_l    = 0.0;
             u_l_x  = 0.0;
+
+
+
             for aa = 1 : n_en
                 x_l    = x_l    + x_ele(aa) * PolyShape(pp, aa, xi(qua), 0); % x for quadrature rule
                 dx_dxi = dx_dxi + x_ele(aa) * PolyShape(pp, aa, xi(qua), 1);
-                u_l    = u_l    + u_ele(aa) * PolyShape(pp, aa, xi(qua), 0);
-                u_l_x  = u_l_x  + u_ele(aa) * PolyShape(pp, aa, xi(qua), 1);
             end
             dxi_dx = 1.0 / dx_dxi;
+
+            for aa = 1 : n_en
+                u_l    = u_l    + u_ele(aa) * PolyShape(pp, aa, xi(qua), 0);
+                u_l_x  = u_l_x  + u_ele(aa) * PolyShape(pp, aa, xi(qua), 1) * dxi_dx;
+            end
+            
             y_l    = x_l^5;
             y_l_x  = 5*x_l^4;
 
@@ -171,10 +179,15 @@ for s = 1:1                % n_el = 2,4...16
             x_l = 0.0;
             u_l = 0.0;
             u_l_x = 0.0;
+            dx_dxi= 0.0;
+            for aa = 1 : n_en
+                dx_dxi = dx_dxi + x_ele(aa) * PolyShape(pp, aa, xi_sam(ll), 1);
+            end
+            dxi_dx = 1 / dx_dxi;
             for aa = 1 : n_en
                 x_l   = x_l   + x_ele(aa) * PolyShape(pp, aa, xi_sam(ll), 0);
                 u_l   = u_l   + u_ele(aa) * PolyShape(pp, aa, xi_sam(ll), 0);
-                u_l_x = u_l_x + u_ele(aa) * PolyShape(pp, aa, xi_sam(ll), 1);
+                u_l_x = u_l_x + u_ele(aa) * PolyShape(pp, aa, xi_sam(ll), 1) * dxi_dx;
             end
 
             x_sam( (ee-1)*n_sam + ll ) = x_l;
@@ -193,17 +206,33 @@ log_h   = log(hh);
 log_El2 = log(El2);
 log_Eh1 = log(Eh1);
 
-% plot(log_h,log_El2,'b');
-% for s=1:7
-%     k_1(s) = (log_El2(s+1)-log_El2(s))/(log_h(s+1)-log_h(s));
-% end
+plot(log_h,log_El2,'b','LineWidth',2);
+hold on
+plot(log_h,log_Eh1,'r','LineWidth',2);
+
+k_1=zeros(7,1); % slope of El2
+k_2=zeros(7,1); % slope of Eh1
+
+for s=1:7
+    k_1(s) = (log_El2(s+1)-log_El2(s))/(log_h(s+1)-log_h(s));
+    k_2(s) = (log_Eh1(s+1)-log_Eh1(s))/(log_h(s+1)-log_h(s));
+end
+
+K_1 = 0.0;
+K_2 = 0.0;
+for s=1:7
+    K_1 = K_1 + k_1(s);
+    K_2 = K_2 + k_2(s);
+end
+k_1
+K_1=K_1/7
+k_2
+K_2=K_2/7
+
+% plot(x_sam, y_sam, '-k','LineWidth',2);
+% hold on;
+% plot(x_sam, u_sam, '--r','LineWidth',2);
 % 
-% plot(log_h,log_Eh1,'r');
-
-plot(x_sam, y_sam, '-k','LineWidth',2);
-hold on;
-plot(x_sam, u_sam, '--r','LineWidth',2);
-
 % plot(x_sam, u_x_sam, '-b','LineWidth',2); % ？
 % hold on;
 % plot(x_sam, y_x_sam, '-k','LineWidth',2);
