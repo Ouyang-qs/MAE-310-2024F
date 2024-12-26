@@ -1,4 +1,4 @@
-function [val_xi, val_eta] = Quad_tri_grad(aa, xi, eta)
+function [val_xi, val_eta] = Tri_grad(aa)
 
 if aa == 1
     val_xi  = -1;

@@ -1,4 +1,4 @@
-function val = Quad_tri(aa, xi, eta)
+function val = Tri(aa, xi, eta)
 
 if aa == 1
     val = 1-xi-eta;
