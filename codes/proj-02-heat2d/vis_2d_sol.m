@@ -1,7 +1,7 @@
 clear all; clc; clf;
 
-load("HEAT.mat");
-
+% load("HEAT.mat");
+load("HEAT_triangles.mat");
 hh_x = 1.0 / n_el_x;
 hh_y = 1.0 / n_el_y;
 
