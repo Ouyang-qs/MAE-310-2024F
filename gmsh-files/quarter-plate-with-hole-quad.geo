@@ -34,4 +34,7 @@ Recombine Surface{2};
 
 Mesh.ElementOrder = 1;		//generate linear mesh (1st-order elements)
 Mesh.Algorithm = 8;			//use the Frontal-Delaunay algorithm to generate unstructured meshes, which is suitable for ...								//complex geometries, especially in 2D ( search through the Internet )
+
+//explain the meaning of the geo file：这个文件先定义了图形的边界和形状（从点到面），然后等距生成网格，再把网格进行了优化
+
 // EOF
