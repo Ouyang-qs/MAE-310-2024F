@@ -24,7 +24,7 @@ Plane Surface(1) = {1};  		//使用curve loop1 来生成一个面
 Curve Loop(2) = {7, -1, -6, -5}; 	//画封闭回路，line7-circle1逆向-circle6逆向-line5逆向
 Plane Surface(2) = {2};		   	//使用curve loop2 来生成一个面
 
-Transfinite Line{1, 2, 3, 4, 5, 6, 7} = 3;  // 点1到7的所有曲线段上，每个线段生成 3 个等距的网格点，把每条线段分成 2 个网格单元
+Transfinite Line{1, 2, 3, 4, 5, 6, 7} = 6;  // 点1到7的所有曲线段上，每个线段生成 3 个等距的网格点，把每条线段分成 2 个网格单元
 
 Transfinite Surface{1};  			//对surface1生成网格，以边上的节点数等距生成网格
 Transfinite Surface{2};
@@ -38,11 +38,18 @@ Mesh.Algorithm = 8;			//use the Frontal-Delaunay algorithm to generate unstructu
 //explain the meaning of the geo file：这个文件先定义了图形的边界和形状（从点到面），然后等距生成网格，再把网格进行了优化
 
 // EOF
+
 //+
 Physical Curve("up", 8) = {4};
 //+
-Physical Curve("right", 9) = {5};
+Physical Curve("down", 9) = {6};
 //+
 Physical Curve("left", 10) = {3};
 //+
-Physical Curve("down", 11) = {6};
+Physical Curve("right", 11) = {5};
+//+
+Physical Curve("arc", 12) = {2};
+//+
+Physical Curve("arc", 12) += {1};
+//+
+Physical Surface("blue", 13) = {1, 2};

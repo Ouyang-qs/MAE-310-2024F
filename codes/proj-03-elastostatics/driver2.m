@@ -1,4 +1,22 @@
 clear all; clc;
+run('gmshdata.m')
+
+%IEN array
+
+IEN = msh.QUADS(:,1:4); % n_np * n_en
+
+IEN_tri = zeros(1,1);
+for ee = 1:size(IEN,1)
+    IEN_tri(ee*2-1,1) = IEN(ee,1);
+    IEN_tri(ee*2-1,2) = IEN(ee,2);
+    IEN_tri(ee*2-1,3) = IEN(ee,3);
+    IEN_tri(ee*2,1) = IEN(ee,1);
+    IEN_tri(ee*2,2) = IEN(ee,3);
+    IEN_tri(ee*2,3) = IEN(ee,4);
+end
+
+
+
 
 n_sd = 2;   % number of spatial dimension
 niu = 0.3;  % Possion ratio
@@ -21,15 +39,7 @@ DD = DD * E / (1-niu^2);
 % exact_x = @(x,y) x*(1-x)*y*(1-y); 
 % exact_y = @(x,y) x*(1-x)*y*(1-y);
 
-exact_x = @(x,y) x^2+x*y;
-exact_y = @(x,y) x+2*y;
 
-
-% f1 = @(x,y) E/(1-niu^2) * (2*y*(1-y)-niu*(1-2*x)*(1-2*y)) + E/(2+2*niu)*(2*x*(1-x)-(1-2*x)*(1-2*y));
-% f2 = @(x,y) E/(1-niu^2) * (2*x*(1-x)-niu*(1-2*x)*(1-2*y)) + E/(2+2*niu)*(2*y*(1-y)-(1-2*x)*(1-2*y));
-
-f1 = @(x,y) E/(1-niu^2) * (-2);
-f2 = @(x,y) E/(1-niu^2) * (1+niu) / (-2);
 
 
 % quadrature rule
@@ -213,7 +223,13 @@ end
 
 % save the solution vector and number of elements to disp with name
 % ELASTO.mat
-save("ELASTO", "disp", "n_el_x", "n_el_y");
+save("ELASTO2", "disp", "n_el_x", "n_el_y");
 
+
+hold on;
+trisurf(IEN_tri, x_coor, y_coor, disp(:,1));
+axis equal;
+colormap jet
+shading interp
 
 % EOF
