@@ -29,7 +29,7 @@ Transfinite Line{1, 2, 3, 4, 5, 6, 7} = 3;  // 点1到7的所有曲线段上，�
 Transfinite Surface{1};  			//对surface1生成网格，以边上的节点数等距生成网格
 Transfinite Surface{2};
 
-Recombine Surface{1};			//把Transfinite生成的四边形网格，每个单元一分为二成为三角形网格
+Recombine Surface{1};			//*把三角形网格合成为的四边形网格*
 Recombine Surface{2};
 
 Mesh.ElementOrder = 1;		//generate linear mesh (1st-order elements)
@@ -38,3 +38,11 @@ Mesh.Algorithm = 8;			//use the Frontal-Delaunay algorithm to generate unstructu
 //explain the meaning of the geo file：这个文件先定义了图形的边界和形状（从点到面），然后等距生成网格，再把网格进行了优化
 
 // EOF
+//+
+Physical Curve("up", 8) = {4};
+//+
+Physical Curve("right", 9) = {5};
+//+
+Physical Curve("left", 10) = {3};
+//+
+Physical Curve("down", 11) = {6};
