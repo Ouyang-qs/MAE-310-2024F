@@ -1,4 +1,4 @@
-clear all; clc;
+clear all; clc; close all
 
 kappa = 1.0; % conductivity
 
@@ -23,7 +23,7 @@ for iii=1:12
     % mesh generation
     n_en   = 4;               % number of nodes in an element
     n_el_x = 10*iii;              % number of elements in x-dir
-    n_el_y = 10*111;              % number of elements in y-dir
+    n_el_y = 10*iii;              % number of elements in y-dir
     n_el   = n_el_x * n_el_y; % total number of elements
 
     n_np_x = n_el_x + 1;      % number of nodal points in x-dir
@@ -207,7 +207,7 @@ for iii=1:12
     
     L2(iii) = L2_error;
     H1(iii) = H1_error;
-    log_h(iii)  = log(hx*hy);
+    log_h(iii)  = log(sqrt(hx*hy));
 end
 
 log_L2 = log(L2);
@@ -216,6 +216,12 @@ log_H1 = log(H1);
 plot(log_h,log_L2,'b','LineWidth',2);
 hold on
 plot(log_h,log_H1,'r','LineWidth',2);
+
+title('Quadrilateral element')
+xlabel('log(h)')
+ylabel('log(error)')
+legend('L2 Error', 'H1 Error', 'Location', 'best')
+grid on
 
 
 % EOF

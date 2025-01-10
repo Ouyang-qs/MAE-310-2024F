@@ -12,37 +12,25 @@ end
 function [n1,n2] = unit_normal_verctor(x,y)
 % Neumann boundary conditions
 % nothing to do with the arc (no hi on it)
-index=0;
-if x==-1
+
+if x==0 && y~=0
     n1 = -1;
     n2 = 0;
-else
-    index = index +1;
-end
-
-if y==-1
+elseif y==0 && x~=0
     n1 = 0;
     n2 = -1;
-else
-    index = index +1;
-end
-
-if x==1
+elseif y==10 && x==10
+    n1 = 1;
+    n2 = 1;
+elseif x==10 && y~=10
     n1 = 1;
     n2 = 0;
-else
-    index = index +1;
-end
-
-if y==1
+elseif x~=10 && y==10
     n1 = 0;
     n2 = 1;
-else
-    index = index +1;
-end
-
-if index==4
-    error('Error: the displacement of this point is not determined by Neumann BC.');
+elseif x==0 && y==0
+    n1 = 0;
+    n2 = 0;
 end
 
 end
