@@ -11,11 +11,11 @@ n_el = size(IEN,1);    % total number of elements
 n_en = 4;    % number of nodes in an element (quadrilateral)
 n_sd = 2;    % number of spatial dimension
 niu  = 0.3;  % Possion ratio
-E    = 100;  % Young's modulus (unit:GPa)
-Tx   = 10;   % unit(KPa) 
-R    = 0.5;
+E    = 100;  % Young's modulus (unit: GPa)
+Tx   = 10;   % unit: KPa 
+R    = 0.5;  % unit: m
 
-f1 = 0;
+f1 = 0; % no body force
 f2 = 0;
 
 % plane stress
@@ -37,20 +37,6 @@ n_int_xi  = 7;
 n_int_eta = 7;
 n_int     = n_int_xi * n_int_eta;
 [xi, eta,  weight] = Gauss2D(n_int_xi, n_int_eta);
-
-% mesh generation
-% n_en   = 4;               % number of nodes in an element (quadrilateral)
-% n_el_x = 30;              % number of elements in x-dir
-% n_el_y = 30;              % number of elements in y-dir
-% n_el   = n_el_x * n_el_y; % total number of elements
-
-% n_np_x = n_el_x + 1;      % number of nodal points in x-dir
-% n_np_y = n_el_y + 1;      % number of nodal points in y-dir
-% n_np   = n_np_x * n_np_y; % total number of nodal points
-
-
-% hx = 1.0 / n_el_x;        % mesh size in x-dir
-% hy = 1.0 / n_el_y;        % mesh size in y-dir
 
 % Dirichlet boundary nodes
 Dirichlet_BC_x = zeros(1,2);
@@ -92,6 +78,7 @@ for index = 1:s2
     Dirichlet_BC(index+s1,1) = Dirichlet_BC_y(index,1);
     Dirichlet_BC(index+s1,2) = Dirichlet_BC_y(index,2);
 end
+
 % ID array
 ID = zeros(n_sd,n_np)+1;
 for PP = 1 : n_np
@@ -113,9 +100,9 @@ for PP = 1 : n_np
         end
     end
 end
+
 n_eq = counter;
 
-%%
 % allocate the stiffness matrix and load vector
 K = spalloc(n_eq, n_eq, 16 * n_eq);  % need consideration
 F = zeros(n_eq, 1);
@@ -199,13 +186,13 @@ for ee = 1 : n_el
                         if QQ > 0
                             K(PP, QQ) = K(PP, QQ) + k_ele(pp, qq);
                         else
-                            % modify F with the boundary data
-                            [g1,g2] = g_win( x_coor(BB), y_coor(BB) ); % g_win is Dirichlet BC
-                            if jj==1
-                                F(PP) = F(PP) - k_ele(pp, qq) * g1;
-                            elseif jj==2
-                                F(PP) = F(PP) - k_ele(pp, qq) * g2;
-                            end % end of Dirichlet BC loop
+                            % % modify F with the boundary data
+                            % [g1,g2] = g_win( x_coor(BB), y_coor(BB) ); % g_win is Dirichlet BC
+                            % if jj==1
+                            %     F(PP) = F(PP) - k_ele(pp, qq) * g1;
+                            % elseif jj==2
+                            %     F(PP) = F(PP) - k_ele(pp, qq) * g2;
+                            % end % end of Dirichlet BC loop
                         end
                     end
                 end % end of bb loop
@@ -242,66 +229,93 @@ s2=size(Neumann_BC_y,1);
 
 [xi_1D, weight_1D] = Gauss(n_int,-1,1);
 
-h_ele1 = zeros(n_en*n_sd, 1);
-h_ele2 = h_ele1;
+h_ele = zeros(2, 2);
+
 x_ele_line = zeros(2,1);
 
 for ss = 1:s1
-    AA = Neumann_BC_x(ss,1);
-    BB = Neumann_BC_x(ss,2);
-    x_ele_line(1) = y_coor(AA);
-    x_ele_line(2) = y_coor(BB);
-    % x_coor(AA)  = x_coor(BB);
+    for aa = 1:2 % n_en=2 
+        AA = Neumann_BC_x(ss,aa);
+        x_ele_line(aa) = y_coor(AA);
+    end
+    % x_coor(AA) 相等
 
     for ll = 1 : n_int
         x_l = 0.0;
         dx_dxi = 0.0;
-        for aa = 1:2 % 线性插值
+        for aa = 1:2
             x_l    = x_l    + x_ele_line(aa) * PolyShape(1, aa, xi_1D(ll), 0);
             dx_dxi = dx_dxi + x_ele_line(aa) * PolyShape(1, aa, xi_1D(ll), 1);
         end
-        dxi_dx = 1.0 / dx_dxi;
+        
         [h1, h2] = h_win(x_coor(AA), x_l, Tx, R);
         
         for ii = 1 : n_sd
-            if ii == 1
-                for aa = 1:2
-                    h_ele1(aa) = h_ele1(aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h1 * dx_dxi;
-                end
-            elseif ii == 2
-                for aa = 1:2
-                    h_ele2(aa) = h_ele2(aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h2 * dx_dxi;
+            for aa = 1:2
+                if ii == 1
+                    h_ele(ii,aa) = h_ele(ii,aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h1 * dx_dxi;
+                elseif ii == 2
+                    h_ele(ii,aa) = h_ele(ii,aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h2 * dx_dxi;
                 end
             end
         end
     end
 
-    
-    for ii = 1:n_sd
-        PP = ID(ii,AA);
-        if PP>0
-            for aa = 1:2
-                if ii==1
-                    F(PP) = F(PP) + h_ele1(aa);
-                elseif ii==2
-                    F(PP) = F(PP) + h_ele2(aa);
-                end
-            end
-        end
-
-        QQ = ID(ii,BB);
-        if QQ>0
-            for aa = 1:2
-                if ii==1
-                    F(QQ) = F(QQ) + h_ele1(aa);
-                elseif ii==2
-                    F(QQ) = F(QQ) + h_ele2(aa);
-                end
+    for ii = 1 : n_sd
+        for aa = 1:2
+            AA = Neumann_BC_x(ss,aa);
+            PP = ID(ii, AA);
+            if (PP > 0)   % 排除同时处在两个边界上的点 ( g and h )
+                F(PP) = F(PP) + h_ele(ii,aa);
             end
         end
     end
 end
                  
+% for ss = 1:s2
+%     AA = Neumann_BC_y(ss,1);
+%     BB = Neumann_BC_y(ss,2);
+%     x_ele_line(1) = x_coor(AA);
+%     x_ele_line(2) = x_coor(BB);
+%     % y_coor(AA)  = y_coor(BB);
+% 
+%     for ll = 1 : n_int
+%         x_l = 0.0;
+%         dx_dxi = 0.0;
+%         for aa = 1:2 % 线性插值
+%             x_l    = x_l    + x_ele_line(aa) * PolyShape(1, aa, xi_1D(ll), 0);
+%             dx_dxi = dx_dxi + x_ele_line(aa) * PolyShape(1, aa, xi_1D(ll), 1);
+%         end
+% 
+%         [h1, h2] = h_win(x_l, y_coor(AA), Tx, R);
+% 
+%         for ii = 1 : n_sd
+%             if ii == 1
+%                 for aa = 1:2
+%                     h_ele1(aa) = h_ele1(aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h1 * dx_dxi;
+%                 end
+%             elseif ii == 2
+%                 for aa = 1:2
+%                     h_ele2(aa) = h_ele2(aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h2 * dx_dxi;
+%                 end
+%             end
+%         end
+%     end
+% 
+%     for ii = 1 : n_sd
+%         for aa = 1:2
+%             AA = Neumann_BC_x(ss,aa);
+%             PP = ID(ii, AA);
+%             if (PP > 0)       % 排除同时处在两个边界上的点 ( g and h )
+%                 if ii==1
+%                     F(PP) = F(PP) + h_ele1(aa);
+%                 elseif ii==2
+%                     F(PP) = F(PP) + h_ele2(aa);
+%                 end
+%             end
+%         end
+%     end
+% end
 
 % solve the stiffness matrix
 dn = K \ F;
@@ -315,13 +329,13 @@ for nn = 1 : n_np
         if index > 0
             disp(nn,ii) = dn(index);
         else
-            % modify disp with the g data.
-            [g1,g2] = g_win( x_coor(nn), y_coor(nn) ); % g_win is Dirichlet BC
-            if ii==1
-                disp(nn,ii) = g1;
-            elseif ii==2
-                disp(nn,ii) = g2;
-            end         
+            % % modify disp with the g data.
+            % [g1,g2] = g_win( x_coor(nn), y_coor(nn) ); % g_win is Dirichlet BC
+            % if ii==1
+            %     disp(nn,ii) = g1;
+            % elseif ii==2
+            %     disp(nn,ii) = g2;
+            % end         
         end
     end
 end
@@ -330,6 +344,18 @@ end
 % ELASTO.mat
 save("ELASTO2", "disp");
 
+disp_x=disp(:,1);
+disp_y=disp(:,2);
+% hh_x = 1.0 / n_el_x;
+% hh_y = 1.0 / n_el_y;
+% 
+% n_np_x = n_el_x + 1;
+% n_np_y = n_el_y + 1;
+% 
+% figure(1)
+% [X, Y] = meshgrid(0 : hh_x : 1, 0 : hh_y : 1);
+% Z = reshape(disp_x, n_np_x, n_np_y)';
+% surf(X, Y, Z);
 
 
 IEN_tri = zeros(1,1);
@@ -342,12 +368,12 @@ for ee = 1:size(IEN,1)
     IEN_tri(ee*2,3) = IEN(ee,4);
 end
 
-
 hold on;
 trisurf(IEN_tri, x_coor, y_coor, disp(:,1));
 axis equal;
 colormap jet
 shading interp
+
 
 
 

@@ -2,6 +2,7 @@ function [g1,g2] = g(x,y)
 
 % exact_x = @(x,y) x^2+x*y;
 % exact_y = @(x,y) x+2*y;
+% x,y range (0,1)
 % assume all edges are controled by Dirchilet boundary conditions.
 index=0;
 if x==0

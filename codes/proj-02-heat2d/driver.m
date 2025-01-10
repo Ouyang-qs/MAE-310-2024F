@@ -18,11 +18,12 @@ n_int     = n_int_xi * n_int_eta;
 L2 = zeros(12,1);
 H1 = L2;
 log_h = L2;
-% for iii=1:12
+
+for iii=1:12
     % mesh generation
     n_en   = 4;               % number of nodes in an element
-    n_el_x = 60;              % number of elements in x-dir
-    n_el_y = 60;              % number of elements in y-dir
+    n_el_x = 10*iii;              % number of elements in x-dir
+    n_el_y = 10*111;              % number of elements in y-dir
     n_el   = n_el_x * n_el_y; % total number of elements
 
     n_np_x = n_el_x + 1;      % number of nodal points in x-dir
@@ -156,7 +157,6 @@ log_h = L2;
     % HEAT.mat
     save("HEAT", "disp", "n_el_x", "n_el_y");
 
-
     % calculate the error
 
     L2_top = 0.0; L2_bot = 0.0; H1_top = 0.0; H1_bot = 0.0;
@@ -187,36 +187,35 @@ log_h = L2;
 
             end
 
-    %         detJ = dx_dxi * dy_deta - dx_deta * dy_dxi;
-    % 
-    %         L2_top = L2_top + weight(ll) * detJ * (uh - exact(x_l, y_l))^2;
-    %         L2_bot = L2_bot + weight(ll) * detJ * exact(x_l, y_l)^2;
-    % 
-    %         uh_x = (uh_xi * dy_deta - uh_eta * dy_dxi) / detJ;
-    %         uh_y = (-uh_xi * dx_deta + uh_eta * dx_dxi) / detJ;
-    %         H1_top = H1_top + weight(ll) * detJ * ( ( uh_x - exact_x(x_l, y_l) )^2 + ( uh_y - exact_y(x_l, y_l) )^2 );
-    %         H1_bot = H1_bot + weight(ll) * detJ * ( exact_x(x_l, y_l)^2 + exact_y(x_l, y_l)^2 );
+            detJ = dx_dxi * dy_deta - dx_deta * dy_dxi;
+
+            L2_top = L2_top + weight(ll) * detJ * (uh - exact(x_l, y_l))^2;
+            L2_bot = L2_bot + weight(ll) * detJ * exact(x_l, y_l)^2;
+
+            uh_x = (uh_xi * dy_deta - uh_eta * dy_dxi) / detJ;
+            uh_y = (-uh_xi * dx_deta + uh_eta * dx_dxi) / detJ;
+            H1_top = H1_top + weight(ll) * detJ * ( ( uh_x - exact_x(x_l, y_l) )^2 + ( uh_y - exact_y(x_l, y_l) )^2 );
+            H1_bot = H1_bot + weight(ll) * detJ * ( exact_x(x_l, y_l)^2 + exact_y(x_l, y_l)^2 );
         end
     end
-    % 
-    % L2_top = sqrt(L2_top); L2_bot = sqrt(L2_bot);
-    % H1_top = sqrt(H1_top); H1_bot = sqrt(H1_bot);
-    % 
-    % L2_error = L2_top / L2_bot;
-    % H1_error = H1_top / H1_bot;
-    % 
 
-%     L2(iii) = L2_error;
-%     H1(iii) = H1_error;
-%     log_h(iii)  = log(hx*hy);
-% end
+    L2_top = sqrt(L2_top); L2_bot = sqrt(L2_bot);
+    H1_top = sqrt(H1_top); H1_bot = sqrt(H1_bot);
 
-% 
-% log_L2 = log(L2);
-% log_H1 = log(H1);
-% 
-% plot(log_h,log_L2,'b','LineWidth',2);
-% hold on
-% plot(log_h,log_H1,'r','LineWidth',2);
+    L2_error = L2_top / L2_bot;
+    H1_error = H1_top / H1_bot;
+    
+    L2(iii) = L2_error;
+    H1(iii) = H1_error;
+    log_h(iii)  = log(hx*hy);
+end
+
+log_L2 = log(L2);
+log_H1 = log(H1);
+
+plot(log_h,log_L2,'b','LineWidth',2);
+hold on
+plot(log_h,log_H1,'r','LineWidth',2);
+
 
 % EOF

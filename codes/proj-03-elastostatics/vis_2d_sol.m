@@ -22,6 +22,8 @@ az = -61;
 el = 20;
 view(az,el);
 title('displacement in x')
+xlabel('x')
+ylabel('y')
 
 %
 figure(2)
@@ -36,5 +38,7 @@ el = 20;
 view(az,el);
 
 title('displacement in y')
+xlabel('x')
+ylabel('y')
 
 % EOF

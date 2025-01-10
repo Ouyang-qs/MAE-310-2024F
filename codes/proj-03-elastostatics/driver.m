@@ -1,4 +1,5 @@
 clear all; clc;
+% square (0,1)*(0,1)
 
 n_sd = 2;   % number of spatial dimension
 niu = 0.3;  % Possion ratio
@@ -174,7 +175,7 @@ for ee = 1 : n_el
                             K(PP, QQ) = K(PP, QQ) + k_ele(pp, qq);
                         else
                             % modify F with the boundary data
-                            [g1,g2] = g( x_coor(index_2), y_coor(index_2) ); % g is a function
+                            [g1,g2] = g( x_coor(index_2), y_coor(index_2) ); % g is Dirichlet BC
                             if jj==1
                                 F(PP) = F(PP) - k_ele(pp, qq) * g1;
                             elseif jj==2
@@ -201,7 +202,7 @@ for nn = 1 : n_np
             disp(nn,ii) = dn(index);
         else
             % modify disp with the g data.
-            [g1,g2] = g( x_coor(nn), y_coor(nn) ); % g is a function
+            [g1,g2] = g( x_coor(nn), y_coor(nn) ); % g is Dirichlet BC
             if ii==1
                 disp(nn,ii) = g1;
             elseif ii==2
