@@ -1,26 +1,16 @@
 clear all; clc;
 run('gmshdata.m')
 
-%IEN array
+IEN = msh.QUADS(:,1:4); % n_el * n_en
+x_coor = msh.POS(:,2);
+y_coor = msh.POS(:,3);
 
-IEN = msh.QUADS(:,1:4); % n_np * n_en
-
-IEN_tri = zeros(1,1);
-for ee = 1:size(IEN,1)
-    IEN_tri(ee*2-1,1) = IEN(ee,1);
-    IEN_tri(ee*2-1,2) = IEN(ee,2);
-    IEN_tri(ee*2-1,3) = IEN(ee,3);
-    IEN_tri(ee*2,1) = IEN(ee,1);
-    IEN_tri(ee*2,2) = IEN(ee,3);
-    IEN_tri(ee*2,3) = IEN(ee,4);
-end
-
-
-
-
-n_sd = 2;   % number of spatial dimension
-niu = 0.3;  % Possion ratio
-E   = 200;  % Young's modulus (unit:GPa)
+n_np = size(x_coor,1); % total number of nodal points
+n_el = size(IEN,1);    % total number of elements
+n_en = 4;    % number of nodes in an element (quadrilateral)
+n_sd = 2;    % number of spatial dimension
+niu  = 0.3;  % Possion ratio
+E    = 200;  % Young's modulus (unit:GPa)
 
 % plane stress
 DD=zeros(3);
@@ -40,8 +30,6 @@ DD = DD * E / (1-niu^2);
 % exact_y = @(x,y) x*(1-x)*y*(1-y);
 
 
-
-
 % quadrature rule
 n_int_xi  = 5;
 n_int_eta = 5;
@@ -51,56 +39,83 @@ n_int     = n_int_xi * n_int_eta;
 
 
 % mesh generation
-n_en   = 4;               % number of nodes in an element (quadrilateral)
-n_el_x = 30;              % number of elements in x-dir
-n_el_y = 30;              % number of elements in y-dir
-n_el   = n_el_x * n_el_y; % total number of elements
+% n_en   = 4;               % number of nodes in an element (quadrilateral)
+% n_el_x = 30;              % number of elements in x-dir
+% n_el_y = 30;              % number of elements in y-dir
+% n_el   = n_el_x * n_el_y; % total number of elements
 
-n_np_x = n_el_x + 1;      % number of nodal points in x-dir
-n_np_y = n_el_y + 1;      % number of nodal points in y-dir
-n_np   = n_np_x * n_np_y; % total number of nodal points
+% n_np_x = n_el_x + 1;      % number of nodal points in x-dir
+% n_np_y = n_el_y + 1;      % number of nodal points in y-dir
+% n_np   = n_np_x * n_np_y; % total number of nodal points
 
-x_coor = zeros(n_np, 1);
-y_coor = x_coor;
 
-hx = 1.0 / n_el_x;        % mesh size in x-dir
-hy = 1.0 / n_el_y;        % mesh size in y-dir
-
-% generate the nodal coordinates
-for ny = 1 : n_np_y
-    for nx = 1 : n_np_x
-        index = (ny-1)*n_np_x + nx; % nodal index
-        x_coor(index) = (nx-1) * hx;
-        y_coor(index) = (ny-1) * hy;
-    end
-end
-
-% IEN array
-IEN = zeros(n_el, n_en);
-for ex = 1 : n_el_x
-    for ey = 1 : n_el_y
-        ee = (ey-1) * n_el_x + ex; % element index
-        IEN(ee, 1) = (ey-1) * n_np_x + ex;
-        IEN(ee, 2) = (ey-1) * n_np_x + ex + 1;
-        IEN(ee, 3) =  ey    * n_np_x + ex + 1;
-        IEN(ee, 4) =  ey    * n_np_x + ex;
-    end
-end
+% hx = 1.0 / n_el_x;        % mesh size in x-dir
+% hy = 1.0 / n_el_y;        % mesh size in y-dir
 
 % ID array
-ID = zeros(n_sd,n_np);
+Dirichlet_BC_x = zeros(1,2);
+Dirichlet_BC_y = Dirichlet_BC_x;
+
 counter = 0;
-for ny = 2 : n_np_y - 1
-    for nx = 2 : n_np_x - 1
-        index = (ny-1)*n_np_x + nx;
-        counter = counter + 1;
-        ID(index*2-1) = counter;
-        counter = counter + 1;
-        ID(index*2) = counter;
+for index = 1:size(msh.LINES,1)
+    if msh.LINES(index,3)==9
+        counter = counter+1;
+        Dirichlet_BC_y(counter,1:2)=[msh.LINES(index,1),msh.LINES(index,2)];
     end
 end
 
+counter = 0;
+for index = 1:size(msh.LINES,1)
+    if msh.LINES(index,3)==10
+        counter = counter+1;
+        Dirichlet_BC_x(counter,1:2)=[msh.LINES(index,1),msh.LINES(index,2)];
+    end
+end
+
+
+temp = Dirichlet_BC_x(size(Dirichlet_BC_x,1),2); % temp:temporary
+Dirichlet_BC_x(size(Dirichlet_BC_x,1)+1,1) = temp;
+Dirichlet_BC_x(:,2)=1; % direction1 (ii=1)
+
+temp = Dirichlet_BC_y(size(Dirichlet_BC_y,1),2);
+Dirichlet_BC_y(size(Dirichlet_BC_y,1)+1,1) = temp;
+Dirichlet_BC_y(:,2)=2; % direction2 (ii=2)
+
+Dirichlet_BC = zeros(1,2);
+
+s1=size(Dirichlet_BC_x,1);
+s2=size(Dirichlet_BC_y,1);
+
+for index = 1:s1
+    Dirichlet_BC = Dirichlet_BC_x;
+end
+for index = 1:s2
+    Dirichlet_BC(index+s1,1) =Dirichlet_BC_y(index,1);
+    Dirichlet_BC(index+s1,2) =Dirichlet_BC_y(index,2);
+end
+
+ID = zeros(n_sd,n_np)+1;
+for PP = 1 : n_np
+    for index = 1 : size(Dirichlet_BC,1)
+        if Dirichlet_BC(index,1) == PP
+            ID( Dirichlet_BC(index,2), PP) = 0;
+        end
+    end
+end
+
+counter = 0;
+for PP = 1 : n_np
+    for ii = 1 : n_sd
+        if ID(ii,PP)==0
+            continue
+        else 
+            counter = counter+1;
+            ID(ii,PP)=counter;
+        end
+    end
+end
 n_eq = counter;
+
 
 % allocate the stiffness matrix and load vector
 K = spalloc(n_eq, n_eq, 16 * n_eq);  % need consideration
@@ -224,6 +239,21 @@ end
 % save the solution vector and number of elements to disp with name
 % ELASTO.mat
 save("ELASTO2", "disp", "n_el_x", "n_el_y");
+
+
+
+
+
+
+IEN_tri = zeros(1,1);
+for ee = 1:size(IEN,1)
+    IEN_tri(ee*2-1,1) = IEN(ee,1);
+    IEN_tri(ee*2-1,2) = IEN(ee,2);
+    IEN_tri(ee*2-1,3) = IEN(ee,3);
+    IEN_tri(ee*2,1) = IEN(ee,1);
+    IEN_tri(ee*2,2) = IEN(ee,3);
+    IEN_tri(ee*2,3) = IEN(ee,4);
+end
 
 
 hold on;
