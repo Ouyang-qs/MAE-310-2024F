@@ -2,7 +2,7 @@ clear all; clc;
 
 n_sd = 2;   % number of spatial dimension
 niu = 0.3;  % Possion ratio
-E   = 200;  % Young's modulus (unit:GPa)
+E   = 100;  % Young's modulus (unit:GPa)
 
 % plane stress
 DD=zeros(3);

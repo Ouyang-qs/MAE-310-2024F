@@ -36,7 +36,7 @@ if index==4
     error('Error: the displacement of this point is not determined by Dirichlet BC.');
 end
 
-
+end
 
 
 % EOF

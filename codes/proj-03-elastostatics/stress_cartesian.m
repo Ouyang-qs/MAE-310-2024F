@@ -6,11 +6,11 @@ function [sigma_xx, sigma_yy, sigma_xy] = stress_cartesian(x, y, Tx, R)
 % 极坐标 r 和 theta
 r = sqrt(x.^2 + y.^2);
 theta = atan2(y, x);
-% 若 r 在孔内，返回 NaN
+% 若 r 在孔内，没有应力
 if r < R
-    sigma_xx = NaN;
-    sigma_yy = NaN;
-    sigma_xy = NaN;
+    sigma_xx = 0;
+    sigma_yy = 0;
+    sigma_xy = 0;
     return;
 end
 % 极坐标下应力分量
