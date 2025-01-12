@@ -19,7 +19,7 @@ Line(5) = {2, 1};
 Line(6) = {1, 5};
 Line(7) = {2, 7};
 
-Curve Loop(1) = {-3,-2,-7,-4}; 		//画封闭回路，line4-line7-circle2-line3
+Curve Loop(1) = {-3,-2,-7,-4}; 	//画封闭回路，line4-line7-circle2-line3
 Plane Surface(1) = {1};  		//使用curve loop1 来生成一个面
 
 Curve Loop(2) = {7, -1, -6, -5}; 	//画封闭回路，line7-circle1逆向-circle6逆向-line5逆向
