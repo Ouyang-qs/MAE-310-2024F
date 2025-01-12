@@ -24,6 +24,8 @@ DD = DD * E / (1-niu^2);
 
 exact_x = @(x,y) x^2+x*y;
 exact_y = @(x,y) x+2*y;
+exact_x_x = @(x,y) 2*x+y;
+exact_x_y = @(x,y) x;
 
 
 % f1 = @(x,y) E/(1-niu^2) * (2*y*(1-y)-niu*(1-2*x)*(1-2*y)) + E/(2+2*niu)*(2*x*(1-x)-(1-2*x)*(1-2*y));
@@ -43,8 +45,8 @@ n_int     = n_int_xi * n_int_eta;
 
 % mesh generation
 n_en   = 4;               % number of nodes in an element (quadrilateral)
-n_el_x = 30;              % number of elements in x-dir
-n_el_y = 30;              % number of elements in y-dir
+n_el_x = 50;              % number of elements in x-dir
+n_el_y = 50;              % number of elements in y-dir
 n_el   = n_el_x * n_el_y; % total number of elements
 
 n_np_x = n_el_x + 1;      % number of nodal points in x-dir
@@ -219,55 +221,117 @@ save("ELASTO", "disp", "n_el_x", "n_el_y");
 
 % EOF
 
-% visualization
-IEN_tri = zeros(1,1);
-for ee = 1:size(IEN,1)
-    IEN_tri(ee*2-1,1) = IEN(ee,1);
-    IEN_tri(ee*2-1,2) = IEN(ee,2);
-    IEN_tri(ee*2-1,3) = IEN(ee,3);
-    IEN_tri(ee*2,1) = IEN(ee,1);
-    IEN_tri(ee*2,2) = IEN(ee,3);
-    IEN_tri(ee*2,3) = IEN(ee,4);
+
+% calculate the error
+
+L2_top = 0.0;
+L2_bot = L2_top; 
+H1_top = L2_top; 
+H1_bot = L2_top;
+
+for ee = 1 : n_el
+    x_ele = x_coor( IEN(ee, :) );
+    y_ele = y_coor( IEN(ee, :) );
+    ux_ele = disp( IEN(ee, 1:n_en), 1);
+    uy_ele = disp( IEN(ee, 1:n_en), 2);
+
+    for ll = 1 : n_int
+        x_l = 0.0; y_l = 0.0;
+        dx_dxi = 0.0; dx_deta = 0.0;
+        dy_dxi = 0.0; dy_deta = 0.0;
+        uhx = 0.0; uhx_xi = 0.0; uhx_eta = 0.0;
+
+        for aa = 1 : n_en
+            pp = n_sd * (aa-1) + ii;
+
+            x_l = x_l + x_ele(aa) * Quad(aa, xi(ll), eta(ll));
+            y_l = y_l + y_ele(aa) * Quad(aa, xi(ll), eta(ll));
+            [Na_xi, Na_eta] = Quad_grad(aa, xi(ll), eta(ll));
+            dx_dxi  = dx_dxi  + x_ele(aa) * Na_xi;
+            dx_deta = dx_deta + x_ele(aa) * Na_eta;
+            dy_dxi  = dy_dxi  + y_ele(aa) * Na_xi;
+            dy_deta = dy_deta + y_ele(aa) * Na_eta;
+
+            uhx      = uhx    + ux_ele(aa) * Quad(aa, xi(ll), eta(ll));
+            uhx_xi   = uhx_xi   + ux_ele(aa) * Na_xi;
+            uhx_eta  = uhx_eta  + ux_ele(aa) * Na_eta;
+
+        end
+
+        detJ = dx_dxi * dy_deta - dx_deta * dy_dxi;
+
+        L2_top = L2_top + weight(ll) * detJ * (uhx - exact_x(x_l, y_l))^2;
+  
+        uhx_x = (uhx_xi * dy_deta - uhx_eta * dy_dxi) / detJ;
+        uhx_y = (-uhx_xi * dx_deta + uhx_eta * dx_dxi) / detJ;
+        
+        H1_top = H1_top + weight(ll) * detJ * ( ( uhx_x - exact_x_x(x_l, y_l) )^2 + ( uhx_y - exact_x_y(x_l, y_l) )^2 );
+
+    end
 end
 
-% Displacement
 
-disp_x=disp(:,1);
-disp_y=disp(:,2);
+L2_top= sqrt(L2_top);
+H1_top= sqrt(H1_top);
 
-
-figure(2)
-
-trisurf(IEN_tri, x_coor, y_coor, disp_x);
-colormap jet
-shading interp
-colorbar;
-
-title('Displacement Component x');
-xlabel('x');
-ylabel('y');
-
-az = -61;
-el = 20;
-view(az,el);
+L2_error= L2_top;
+H1_error= H1_top;
 
 
-figure(1)
-[X, Y] = meshgrid(0 : hx : 1, 0 : hy : 1);
-Z = reshape(disp_x, n_np_x, n_np_y)';
-surf(X, Y, Z);
+L2 = L2_error
+H1 = H1_error
 
-shading interp
 
-title('displacement in x')
-xlabel('x')
-ylabel('y')
-colormap jet;
-colorbar;
 
-az = -61;
-el = 20;
-view(az,el);
+% % visualization
+% IEN_tri = zeros(1,1);
+% for ee = 1:size(IEN,1)
+%     IEN_tri(ee*2-1,1) = IEN(ee,1);
+%     IEN_tri(ee*2-1,2) = IEN(ee,2);
+%     IEN_tri(ee*2-1,3) = IEN(ee,3);
+%     IEN_tri(ee*2,1) = IEN(ee,1);
+%     IEN_tri(ee*2,2) = IEN(ee,3);
+%     IEN_tri(ee*2,3) = IEN(ee,4);
+% end
+% 
+% % Displacement
+% 
+% disp_x=disp(:,1);
+% disp_y=disp(:,2);
+% 
+% 
+% figure(2)
+% 
+% trisurf(IEN_tri, x_coor, y_coor, disp_x);
+% colormap jet
+% shading interp
+% colorbar;
+% 
+% title('Displacement Component x');
+% xlabel('x');
+% ylabel('y');
+% 
+% az = -61;
+% el = 20;
+% view(az,el);
+% 
+% 
+% figure(1)
+% [X, Y] = meshgrid(0 : hx : 1, 0 : hy : 1);
+% Z = reshape(disp_x, n_np_x, n_np_y)';
+% surf(X, Y, Z);
+% 
+% shading interp
+% 
+% title('displacement in x')
+% xlabel('x')
+% ylabel('y')
+% colormap jet;
+% colorbar;
+% 
+% az = -61;
+% el = 20;
+% view(az,el);
 %
 % figure(2)
 % [X, Y] = meshgrid(0 : hh_x : 1, 0 : hh_y : 1);
@@ -312,12 +376,10 @@ view(az,el);
 % 
 % 
 % figure(1)
-% % hold on;
 % trisurf(IEN_tri, x_coor, y_coor, epsilon11);
 % colormap jet
 % shading interp
 % colorbar;
-% axis equal;
 % 
 % title('Strain Component x');
 % xlabel('x');
@@ -325,19 +387,15 @@ view(az,el);
 % 
 % 
 % figure(2)
-% % hold on;
 % trisurf(IEN_tri, x_coor, y_coor, sigma11);
 % 
 % colormap jet
 % shading interp
 % colorbar;
-% axis equal;
 % 
 % title('Stress Component x');
 % xlabel('x');
 % ylabel('y');
-
-
 
 
 

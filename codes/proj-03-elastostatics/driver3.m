@@ -1,5 +1,5 @@
 clear; clc;
-run('new40.m');
+run('problem2.m');
 
 % mesh
 IEN = msh.QUADS(:,1:4); % n_el * n_en
@@ -11,14 +11,15 @@ n_el = size(IEN,1);    % total number of elements
 n_en = 4;    % number of nodes in an element (quadrilateral)
 n_sd = 2;    % number of spatial dimension
 niu  = 0.3;  % Possion ratio
-E    = 1E9;  % Young's modulus (unit: KPa)
-Tx   = 10000;% traction (unit: KPa)
+E    = 1E9;  % Young's modulus (unit: KPa)   ??
+Tx   = 10000;   % traction (unit: KPa)  ??
 R    = 0.5;  % radius (unit: m)
 L    = 2;    % length (unit: m)
 f1   = 0;    % no body force
 f2   = 0;
 
-x_coor = x_coor / L;  % 长度单位化
+
+x_coor = x_coor / L;  % 单位化
 y_coor = y_coor / L;
 R = R / L;
 
@@ -37,8 +38,8 @@ DD = DD * E / (1-niu^2);
 
 
 % quadrature rule
-n_int_xi  = 5;
-n_int_eta = 5;
+n_int_xi  = 7;
+n_int_eta = 7;
 n_int     = n_int_xi * n_int_eta;
 [xi, eta,  weight] = Gauss2D(n_int_xi, n_int_eta);
 
@@ -70,28 +71,28 @@ temp = Dirichlet_BC_y(size(Dirichlet_BC_y,1),2);
 Dirichlet_BC_y(size(Dirichlet_BC_y,1)+1,1) = temp;
 Dirichlet_BC_y(:,2)=2; % direction2 (ii=2)
 
-% s1=size(Dirichlet_BC_x,1);
-% s2=size(Dirichlet_BC_y,1);
+Dirichlet_BC = zeros(1,2);
 
-Dirichlet_BC = [Dirichlet_BC_x; Dirichlet_BC_y];
+s1=size(Dirichlet_BC_x,1);
+s2=size(Dirichlet_BC_y,1);
 
-% for index = 1:s2
-%     Dirichlet_BC(index+s1,1) = Dirichlet_BC_y(index,1);
-%     Dirichlet_BC(index+s1,2) = Dirichlet_BC_y(index,2);
-% end
+for index = 1:s1
+    Dirichlet_BC = Dirichlet_BC_x;
+end
+
+for index = 1:s2
+    Dirichlet_BC(index+s1,1) = Dirichlet_BC_y(index,1);
+    Dirichlet_BC(index+s1,2) = Dirichlet_BC_y(index,2);
+end
 
 % ID array
 ID = zeros(n_sd,n_np)+1;
-% for PP = 1 : n_np
-%     for index = 1 : size(Dirichlet_BC,1)
-%         if Dirichlet_BC(index,1) == PP
-%             ID( Dirichlet_BC(index,2), PP) = 0;
-%         end
-%     end
-% end
-
-for ii = 1:size(Dirichlet_BC, 1)
-    ID( Dirichlet_BC(ii, 2), Dirichlet_BC(ii, 1)) = 0;
+for PP = 1 : n_np
+    for index = 1 : size(Dirichlet_BC,1)
+        if Dirichlet_BC(index,1) == PP
+            ID( Dirichlet_BC(index,2), PP) = 0;
+        end
+    end
 end
 
 counter = 0;
@@ -148,6 +149,7 @@ for ee = 1 : n_el
 
             for ii=1:n_sd
                 pp = n_sd * (aa-1) + ii;
+
                 if ii==1
                     f_ele(pp) = f_ele(pp) + weight(ll) * detJ * f1 * Na;
                 elseif ii==2
@@ -219,22 +221,14 @@ for index = 1:size(msh.LINES,1)
     end
 end
 
-counter = 0;
-for index = 1:size(msh.LINES,1)
-    if msh.LINES(index,3)==8   % LINE with tag #8 on the top (constant y_coor)
-        counter = counter+1;
-        Neumann_BC_y(counter,1:2)=[msh.LINES(index,1),msh.LINES(index,2)];
-    end
-end
-
 s1 = size(Neumann_BC_x,1);  % number of linear elements
-s2 = size(Neumann_BC_y,1);
+
 
 % quadrature rule
-qua = 3;
+qua = 7;
 [xi_1D, weight_1D] = Gauss(qua,-1,1);
 
-% right boundary
+% stress only on the right boundary
 for ss = 1:s1
     y_ele_node = zeros(2,1);
     h_ele = zeros(2,2);
@@ -253,11 +247,17 @@ for ss = 1:s1
             dy_dxi = dy_dxi + y_ele_node(aa) * PolyShape(1, aa, xi_1D(ll), 1);
         end
         
-        [h1, h2] = h_win(x_coor(AA), y_l, R);
+        h1 = Tx;  % stress only on the right boundary and it's a constant
+        h2 = 0;
 
-        for aa = 1:2
-            h_ele(1,aa) = h_ele(1,aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h1*Tx * dy_dxi;
-            h_ele(2,aa) = h_ele(2,aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h2*Tx * dy_dxi;
+        for ii = 1 : n_sd
+            for aa = 1:2
+                if ii == 1
+                    h_ele(ii,aa) = h_ele(ii,aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h1 * dy_dxi;
+                elseif ii == 2
+                    h_ele(ii,aa) = h_ele(ii,aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h2 * dy_dxi;
+                end
+            end
         end
     end
     
@@ -272,42 +272,6 @@ for ss = 1:s1
     end
 end
 
-% top boundary
-for ss = 1:s2
-    x_ele_node = zeros(2,1);
-    h_ele = zeros(2,2);
-
-    for aa = 1:2 % n_en=2 
-        AA = Neumann_BC_y(ss,aa);
-        x_ele_node(aa) = x_coor(AA);
-    end
-    % y_coor(AA) 相等
-
-    for ll = 1 : qua
-        x_l = 0.0;
-        dx_dxi = 0.0;
-        for aa = 1:2
-            x_l    = x_l    + x_ele_node(aa) * PolyShape(1, aa, xi_1D(ll), 0);
-            dx_dxi = dx_dxi + x_ele_node(aa) * PolyShape(1, aa, xi_1D(ll), 1);
-        end
-
-        [h1, h2] = h_win(x_l, y_coor(AA), R);
-        for aa = 1:2
-            h_ele(1,aa) = h_ele(1,aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h1*Tx * dx_dxi;
-            h_ele(2,aa) = h_ele(2,aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h2*Tx * dx_dxi;
-        end
-    end
-
-    for ii = 1 : n_sd
-        for aa = 1:2
-            AA = Neumann_BC_y(ss,aa);
-            PP = ID(ii, AA);
-            if (PP > 0)   % 排除同时处在两个边界上的点 ( g and h )
-                F(PP) = F(PP) + h_ele(ii,aa);
-            end
-        end
-    end
-end
 
 % solve the stiffness matrix
 dn = K \ F;
@@ -337,9 +301,55 @@ x_coor = x_coor * L;
 y_coor = y_coor * L;
 
 % save the solution vector and number of elements to disp with name
-% ELASTO2.mat
+% ELASTO.mat
 save("ELASTO2", "disp");
 
+
+
+% visualization
+disp_x = disp(:,1);
+disp_y = disp(:,2);
+
+IEN_tri = zeros(1,1);
+for ee = 1:size(IEN,1)
+    IEN_tri(ee*2-1,1) = IEN(ee,1);
+    IEN_tri(ee*2-1,2) = IEN(ee,2);
+    IEN_tri(ee*2-1,3) = IEN(ee,3);
+    IEN_tri(ee*2,1) = IEN(ee,1);
+    IEN_tri(ee*2,2) = IEN(ee,3);
+    IEN_tri(ee*2,3) = IEN(ee,4);
+end
+
+% Displacement
+figure(1)
+
+trisurf(IEN_tri, x_coor, y_coor, disp_x);
+
+colormap jet
+shading interp
+colorbar;
+axis equal;
+
+title('Displacement Component x');
+xlabel('x');
+ylabel('y');
+view(2)
+
+
+figure(2)
+
+trisurf(IEN_tri, x_coor, y_coor, disp_y);
+
+colormap jet
+shading interp
+colorbar;
+% axis equal;
+
+title('Displacement Component y');
+xlabel('x');
+ylabel('y');
+axis equal;
+view(2)
 
 % Strain
 
@@ -386,7 +396,7 @@ for ee = 1 : n_el
             duy_dx = duy_dx  + uy_ele(aa) * Na_x;
             duy_dy = duy_dy + uy_ele(aa) * Na_y;
         end
-
+        
         epsilon11(ee,ll) = dux_dx ;
         epsilon22(ee,ll) = duy_dy ;
         epsilon12(ee,11) = duy_dx+dux_dy;
@@ -419,121 +429,9 @@ sigma_vect = DD * strain_vect;
 
 
 
-% calculate the error
-
-L2_top = 0.0;
-L2_bot = 0.0;
-for ee = 1 : n_el
-    x_ele = x_coor( IEN(ee, :) );
-    y_ele = y_coor( IEN(ee, :) );
-    ux_ele = sigma_vect(1,IEN(ee, 1:n_en));
-
-    for ll = 1 : n_int
-        x_l = 0.0; y_l = 0.0;
-        dx_dxi = 0.0; dx_deta = 0.0;
-        dy_dxi = 0.0; dy_deta = 0.0;
-        uh = 0.0; uh_xi = 0.0; uh_eta = 0.0;
-
-        for aa = 1 : n_en
-            pp = n_sd * (aa-1) + ii;
-
-            x_l = x_l + x_ele(aa) * Quad(aa, xi(ll), eta(ll));
-            y_l = y_l + y_ele(aa) * Quad(aa, xi(ll), eta(ll));
-            [Na_xi, Na_eta] = Quad_grad(aa, xi(ll), eta(ll));
-            dx_dxi  = dx_dxi  + x_ele(aa) * Na_xi;
-            dx_deta = dx_deta + x_ele(aa) * Na_eta;
-            dy_dxi  = dy_dxi  + y_ele(aa) * Na_xi;
-            dy_deta = dy_deta + y_ele(aa) * Na_eta;
-
-            uh      = uh      + ux_ele(aa) * Quad(aa, xi(ll), eta(ll));
-            uh_xi   = uh_xi   + ux_ele(aa) * Na_xi;
-            uh_eta  = uh_eta  + ux_ele(aa) * Na_eta;
-
-        end
-
-        detJ = dx_dxi * dy_deta - dx_deta * dy_dxi;
-
-        [sigma_xx, sigma_yy, sigma_xy] = stress_cartesian(x_l, y_l, R);
-
-        exact = sigma_xx * Tx;
-
-        L2_top = L2_top + weight(ll) * detJ * (uh - exact)^2;
-        L2_bot = L2_bot + weight(ll) * detJ * exact^2;
-    end
-end
-
-L2_top = sqrt(L2_top); 
-L2_bot = sqrt(L2_bot);
-
-L2_error = L2_top / L2_bot
-
-
-
-
-% visualization
-disp_x = disp(:,1);
-disp_y = disp(:,2);
-
-IEN_tri = zeros(1,1);
-for ee = 1:size(IEN,1)
-    IEN_tri(ee*2-1,1) = IEN(ee,1);
-    IEN_tri(ee*2-1,2) = IEN(ee,2);
-    IEN_tri(ee*2-1,3) = IEN(ee,3);
-    IEN_tri(ee*2,1) = IEN(ee,1);
-    IEN_tri(ee*2,2) = IEN(ee,3);
-    IEN_tri(ee*2,3) = IEN(ee,4);
-end
- 
-% % Displacement
-% figure(1)
-% 
-% trisurf(IEN_tri, x_coor, y_coor, disp_x);
-% 
-% colormap jet
-% shading interp
-% colorbar;
-% axis equal;
-% 
-% title('Displacement Component x');
-% xlabel('x');
-% ylabel('y');
-% view(2)
-% 
-% 
-% figure(2)
-% 
-% trisurf(IEN_tri, x_coor, y_coor, disp_y);
-% 
-% colormap jet
-% shading interp
-% colorbar;
-% % axis equal;
-% 
-% title('Displacement Component y');
-% xlabel('x');
-% ylabel('y');
-% axis equal;
-% view(2)
-% 
-% 
-% figure(3)
-% 
-% trisurf(IEN_tri, x_coor, y_coor, strain11);
-% colormap jet
-% shading interp
-% colorbar;
-% axis equal;
-% 
-% title('Strain Component x');
-% xlabel('x');
-% ylabel('y');
-% view(2)
-
-
-figure(4)
+figure(3)
 
 trisurf(IEN_tri, x_coor, y_coor, sigma_vect(1,:));
-
 colormap jet
 shading interp
 colorbar;
@@ -542,4 +440,20 @@ axis equal;
 title('Stress Component x');
 xlabel('x');
 ylabel('y');
+view(2)
+
+
+figure(4)
+
+trisurf(IEN_tri, x_coor, y_coor, sigma_vect(2,:));
+
+colormap jet
+shading interp
+colorbar;
+axis equal;
+
+title('Stress Component y');
+xlabel('x');
+ylabel('y');
 view(2);
+

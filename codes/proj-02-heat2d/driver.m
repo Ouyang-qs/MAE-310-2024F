@@ -185,6 +185,7 @@ for iii=1:12
                 uh_xi   = uh_xi   + u_ele(aa) * Na_xi;
                 uh_eta  = uh_eta  + u_ele(aa) * Na_eta;
 
+
             end
 
             detJ = dx_dxi * dy_deta - dx_deta * dy_dxi;
