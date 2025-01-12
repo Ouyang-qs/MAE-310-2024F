@@ -1,5 +1,5 @@
 clear; clc;
-run('newone.m');
+run('problem2.m');
 
 % mesh
 IEN = msh.QUADS(:,1:4); % n_el * n_en
@@ -11,10 +11,10 @@ n_el = size(IEN,1);    % total number of elements
 n_en = 4;    % number of nodes in an element (quadrilateral)
 n_sd = 2;    % number of spatial dimension
 niu  = 0.3;  % Possion ratio
-E    = 1E6;  % Young's modulus (unit: KPa)   ??
-Tx   = 10;   % traction (unit: KPa)  ??
+E    = 1E9;  % Young's modulus (unit: KPa)
+Tx   = 10000;   % traction (unit: KPa)
 R    = 0.5;  % radius (unit: m)
-L    = 10;   % length (unit: m)
+L    = 2;   % length (unit: m)
 f1   = 0;    % no body force
 f2   = 0;
 
@@ -38,8 +38,8 @@ DD = DD * E / (1-niu^2);
 
 
 % quadrature rule
-n_int_xi  = 7;
-n_int_eta = 7;
+n_int_xi  = 5;
+n_int_eta = 5;
 n_int     = n_int_xi * n_int_eta;
 [xi, eta,  weight] = Gauss2D(n_int_xi, n_int_eta);
 
@@ -71,28 +71,29 @@ temp = Dirichlet_BC_y(size(Dirichlet_BC_y,1),2);
 Dirichlet_BC_y(size(Dirichlet_BC_y,1)+1,1) = temp;
 Dirichlet_BC_y(:,2)=2; % direction2 (ii=2)
 
-Dirichlet_BC = zeros(1,2);
+% s1=size(Dirichlet_BC_x,1);
+% s2=size(Dirichlet_BC_y,1);
 
-s1=size(Dirichlet_BC_x,1);
-s2=size(Dirichlet_BC_y,1);
+Dirichlet_BC = [Dirichlet_BC_x; Dirichlet_BC_y];
 
-for index = 1:s1
-    Dirichlet_BC = Dirichlet_BC_x;
-end
-
-for index = 1:s2
-    Dirichlet_BC(index+s1,1) = Dirichlet_BC_y(index,1);
-    Dirichlet_BC(index+s1,2) = Dirichlet_BC_y(index,2);
-end
+% 
+% for index = 1:s2
+%     Dirichlet_BC(index+s1,1) = Dirichlet_BC_y(index,1);
+%     Dirichlet_BC(index+s1,2) = Dirichlet_BC_y(index,2);
+% end
 
 % ID array
 ID = zeros(n_sd,n_np)+1;
-for PP = 1 : n_np
-    for index = 1 : size(Dirichlet_BC,1)
-        if Dirichlet_BC(index,1) == PP
-            ID( Dirichlet_BC(index,2), PP) = 0;
-        end
-    end
+% for PP = 1 : n_np
+%     for index = 1 : size(Dirichlet_BC,1)
+%         if Dirichlet_BC(index,1) == PP
+%             ID( Dirichlet_BC(index,2), PP) = 0;
+%         end
+%     end
+% end
+
+for ii = 1:size(Dirichlet_BC, 1)
+    ID( Dirichlet_BC(ii, 2), Dirichlet_BC(ii, 1)) = 0;
 end
 
 counter = 0;
@@ -233,7 +234,7 @@ s1 = size(Neumann_BC_x,1);  % number of linear elements
 s2 = size(Neumann_BC_y,1);
 
 % quadrature rule
-qua = 7;
+qua = 3;
 [xi_1D, weight_1D] = Gauss(qua,-1,1);
 
 % right boundary
@@ -257,15 +258,12 @@ for ss = 1:s1
         
         [h1, h2] = h_win(x_coor(AA), y_l, R);
 
-        for ii = 1 : n_sd
+        
             for aa = 1:2
-                if ii == 1
-                    h_ele(ii,aa) = h_ele(ii,aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h1*Tx * dy_dxi;
-                elseif ii == 2
-                    h_ele(ii,aa) = h_ele(ii,aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h2*Tx * dy_dxi;
-                end
+                    h_ele(1,aa) = h_ele(1,aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h1*Tx * dy_dxi;
+                    h_ele(2,aa) = h_ele(2,aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h2*Tx * dy_dxi;
+               
             end
-        end
     end
     
     for ii = 1 : n_sd
@@ -345,13 +343,13 @@ for nn = 1 : n_np
     end
 end
 
-disp = disp * L;
+disp = -disp * L;
 x_coor = x_coor * L;
 y_coor = y_coor * L;
 
 % save the solution vector and number of elements to disp with name
-% ELASTO.mat
-save("ELASTO2", "disp","x_coor","y_coor","");
+% ELASTO2.mat
+save("ELASTO2", "disp");
 
 
 
@@ -371,21 +369,23 @@ end
 
 % Displacement
 figure(1)
-% hold on;
+
 trisurf(IEN_tri, x_coor, y_coor, disp_x);
 
 colormap jet
 shading interp
 colorbar;
-% axis equal;
+axis equal;
 
 title('Displacement Component x');
 xlabel('x');
 ylabel('y');
 
+view(2)
+
 
 figure(2)
-% hold on;
+
 trisurf(IEN_tri, x_coor, y_coor, disp_y);
 
 colormap jet
@@ -396,60 +396,111 @@ colorbar;
 title('Displacement Component y');
 xlabel('x');
 ylabel('y');
+axis equal;
+view(2)
 
+% Strain
 
+xi(1) = -1;  eta(1) = -1;
+xi(2) =  1;  eta(2) = -1;
+xi(3) =  1;  eta(3) =  1;
+xi(4) = -1;  eta(4) =  1;
 
+epsilon11 = zeros(n_el,n_en);
+epsilon22 = epsilon11;
+epsilon12 = epsilon11;
+epsilon21 = epsilon11;
 
-% Strain and Stress
-n = n_np;
+% loop over element
+for ee = 1 : n_el
+    x_ele  = x_coor( IEN(ee, 1:n_en) );
+    y_ele  = y_coor( IEN(ee, 1:n_en) );
+    ux_ele = disp( IEN(ee, 1:n_en), 1);
+    uy_ele = disp( IEN(ee, 1:n_en), 2);
 
-[ux_dx, uy_dy, ux_dy, uy_dx] = derivative(x_coor, y_coor, disp, IEN);
+    for ll = 1 : n_en
+        dx_dxi = 0.0; dx_deta = 0.0;
+        dy_dxi = 0.0; dy_deta = 0.0;
+        for aa = 1 : n_en
+            [Na_xi, Na_eta] = Quad_grad(aa, xi(ll), eta(ll));
+            dx_dxi  = dx_dxi  + x_ele(aa) * Na_xi;
+            dx_deta = dx_deta + x_ele(aa) * Na_eta;
+            dy_dxi  = dy_dxi  + y_ele(aa) * Na_xi;
+            dy_deta = dy_deta + y_ele(aa) * Na_eta;
+        end
+        detJ = dx_dxi * dy_deta - dx_deta * dy_dxi;
 
-epsilon_vect = zeros(n,3);
-for i = 1:n
-    epsilon_vect(i,1) = ux_dx(i);
-    epsilon_vect(i,2) = uy_dy(i);
-    epsilon_vect(i,3) = uy_dx(i) + ux_dy(i);
+        dux_dx = 0.0; dux_dy = 0.0;
+        duy_dx = 0.0; duy_dy = 0.0;
+
+        for aa = 1 : n_en
+            Na = Quad(aa, xi(ll), eta(ll));
+            [Na_xi, Na_eta] = Quad_grad(aa, xi(ll), eta(ll));
+            Na_x = ( Na_xi * dy_deta - Na_eta * dy_dxi) / detJ;
+            Na_y = (-Na_xi * dx_deta + Na_eta * dx_dxi) / detJ;
+
+            dux_dx = dux_dx  + ux_ele(aa) * Na_x;
+            dux_dy = dux_dy + ux_ele(aa) * Na_y;
+            duy_dx = duy_dx  + uy_ele(aa) * Na_x;
+            duy_dy = duy_dy + uy_ele(aa) * Na_y;
+        end
+        
+        epsilon11(ee,ll) = dux_dx ;
+        epsilon22(ee,ll) = duy_dy ;
+        epsilon12(ee,11) = duy_dx+dux_dy;
+    end
 end
 
-sigma_vect=zeros(n,3);
-for i=1:n
-    sigma_vect(i,1:3) = DD * epsilon_vect(i,1:3)';
+strain11 = zeros(n_np,1);
+strain22 = zeros(n_np,1);
+strain12 = zeros(n_np,1);
+index = zeros(n_np,1);
+
+for ee = 1 : n_el
+    for aa = 1 : 4
+        AA = IEN(ee,aa);
+        strain11(AA) = strain11(AA) + epsilon11(ee,aa);
+        strain22(AA) = strain22(AA) + epsilon22(ee,aa);
+        strain12(AA) = strain12(AA) + epsilon12(ee,aa);
+        index(AA) = index(AA)+1;
+    end
 end
 
-epsilon11 = epsilon_vect(:,1);
-epsilon22 = epsilon_vect(:,2);
-epsilon12 = epsilon_vect(:,3);
+strain11 = strain11./index;
+strain22 = strain22./index;
+strain12 = strain12./index;
 
-sigma11 = sigma_vect(:,1);
-sigma22 = sigma_vect(:,2);
-sigma12 = sigma_vect(:,3);
+strain_vect = [strain11'; strain22' ;strain12'];
+
+sigma_vect = DD * strain_vect;
 
 
 
 figure(3)
-% hold on;
-trisurf(IEN_tri, x_coor, y_coor, epsilon11);
+
+trisurf(IEN_tri, x_coor, y_coor, strain11);
 colormap jet
 shading interp
 colorbar;
-% axis equal;
+axis equal;
 
 title('Strain Component x');
 xlabel('x');
 ylabel('y');
+view(2)
 
 
 figure(4)
-% hold on;
-trisurf(IEN_tri, x_coor, y_coor, sigma11);
+
+trisurf(IEN_tri, x_coor, y_coor, sigma_vect(1,:));
 
 colormap jet
 shading interp
 colorbar;
-% axis equal;
+axis equal;
 
 title('Stress Component x');
 xlabel('x');
 ylabel('y');
 
+view(2);
