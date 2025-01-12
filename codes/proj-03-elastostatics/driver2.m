@@ -11,12 +11,17 @@ n_el = size(IEN,1);    % total number of elements
 n_en = 4;    % number of nodes in an element (quadrilateral)
 n_sd = 2;    % number of spatial dimension
 niu  = 0.3;  % Possion ratio
-E    = 100;  % Young's modulus (unit: GPa)
-Tx   = 10;   % traction (unit: KPa)
-R    = 0.5;   % radius (unit: m)
-L    = 2.0;  % length (unit: m)
+E    = 1E6;  % Young's modulus (unit: KPa)   ??
+Tx   = 10;   % traction (unit: KPa)  ??
+R    = 0.5;  % radius (unit: m)
+L    = 10;   % length (unit: m)
 f1   = 0;    % no body force
 f2   = 0;
+
+
+x_coor = x_coor / L;  % 单位化
+y_coor = y_coor / L;
+R = R / L;
 
 % plane stress
 DD=zeros(3);
@@ -250,14 +255,14 @@ for ss = 1:s1
             dy_dxi = dy_dxi + y_ele_node(aa) * PolyShape(1, aa, xi_1D(ll), 1);
         end
         
-        [h1, h2] = h_win(x_coor(AA), y_l, Tx, R);
+        [h1, h2] = h_win(x_coor(AA), y_l, R);
 
         for ii = 1 : n_sd
             for aa = 1:2
                 if ii == 1
-                    h_ele(ii,aa) = h_ele(ii,aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h1 * dy_dxi;
+                    h_ele(ii,aa) = h_ele(ii,aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h1*Tx * dy_dxi;
                 elseif ii == 2
-                    h_ele(ii,aa) = h_ele(ii,aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h2 * dy_dxi;
+                    h_ele(ii,aa) = h_ele(ii,aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h2*Tx * dy_dxi;
                 end
             end
         end
@@ -288,19 +293,19 @@ for ss = 1:s2
     for ll = 1 : qua
         x_l = 0.0;
         dx_dxi = 0.0;
-        for aa = 1:2 % 线性插值
+        for aa = 1:2
             x_l    = x_l    + x_ele_node(aa) * PolyShape(1, aa, xi_1D(ll), 0);
             dx_dxi = dx_dxi + x_ele_node(aa) * PolyShape(1, aa, xi_1D(ll), 1);
         end
 
-        [h1, h2] = h_win(x_l, y_coor(AA), Tx, R);
+        [h1, h2] = h_win(x_l, y_coor(AA), R);
 
         for ii = 1 : n_sd
             for aa = 1:2
                 if ii == 1
-                    h_ele(ii,aa) = h_ele(ii,aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h1 * dx_dxi;
+                    h_ele(ii,aa) = h_ele(ii,aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h1*Tx * dx_dxi;
                 elseif ii == 2
-                    h_ele(ii,aa) = h_ele(ii,aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h2 * dx_dxi;
+                    h_ele(ii,aa) = h_ele(ii,aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h2*Tx * dx_dxi;
                 end
             end
         end
@@ -340,10 +345,17 @@ for nn = 1 : n_np
     end
 end
 
+disp = disp * L;
+x_coor = x_coor * L;
+y_coor = y_coor * L;
+
 % save the solution vector and number of elements to disp with name
 % ELASTO.mat
-save("ELASTO2", "disp");
+save("ELASTO2", "disp","x_coor","y_coor","");
 
+
+
+% visualization
 disp_x = disp(:,1);
 disp_y = disp(:,2);
 
@@ -357,19 +369,87 @@ for ee = 1:size(IEN,1)
     IEN_tri(ee*2,3) = IEN(ee,4);
 end
 
+% Displacement
+figure(1)
 % hold on;
-trisurf(IEN_tri, x_coor, y_coor, disp_y);
-
+trisurf(IEN_tri, x_coor, y_coor, disp_x);
 
 colormap jet
 shading interp
-
 colorbar;
-axis equal;
+% axis equal;
 
 title('Displacement Component x');
 xlabel('x');
 ylabel('y');
 
 
-% EOF
+figure(2)
+% hold on;
+trisurf(IEN_tri, x_coor, y_coor, disp_y);
+
+colormap jet
+shading interp
+colorbar;
+% axis equal;
+
+title('Displacement Component y');
+xlabel('x');
+ylabel('y');
+
+
+
+
+% Strain and Stress
+n = n_np;
+
+[ux_dx, uy_dy, ux_dy, uy_dx] = derivative(x_coor, y_coor, disp, IEN);
+
+epsilon_vect = zeros(n,3);
+for i = 1:n
+    epsilon_vect(i,1) = ux_dx(i);
+    epsilon_vect(i,2) = uy_dy(i);
+    epsilon_vect(i,3) = uy_dx(i) + ux_dy(i);
+end
+
+sigma_vect=zeros(n,3);
+for i=1:n
+    sigma_vect(i,1:3) = DD * epsilon_vect(i,1:3)';
+end
+
+epsilon11 = epsilon_vect(:,1);
+epsilon22 = epsilon_vect(:,2);
+epsilon12 = epsilon_vect(:,3);
+
+sigma11 = sigma_vect(:,1);
+sigma22 = sigma_vect(:,2);
+sigma12 = sigma_vect(:,3);
+
+
+
+figure(3)
+% hold on;
+trisurf(IEN_tri, x_coor, y_coor, epsilon11);
+colormap jet
+shading interp
+colorbar;
+% axis equal;
+
+title('Strain Component x');
+xlabel('x');
+ylabel('y');
+
+
+figure(4)
+% hold on;
+trisurf(IEN_tri, x_coor, y_coor, sigma11);
+
+colormap jet
+shading interp
+colorbar;
+% axis equal;
+
+title('Stress Component x');
+xlabel('x');
+ylabel('y');
+

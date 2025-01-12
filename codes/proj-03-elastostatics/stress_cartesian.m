@@ -1,8 +1,12 @@
-function [sigma_xx, sigma_yy, sigma_xy] = stress_cartesian(x, y, Tx, R)
-% (x,y):直角坐标系下点的坐标
-% Tx: 远场拉伸应力
-% R:  圆孔的半径
+function [sigma_xx, sigma_yy, sigma_xy] = stress_cartesian(x, y, R)
 
+
+% (x,y):直角坐标系下点的坐标 （0，1）
+
+% Tx: 远场拉伸应力 = 1 （单位化）
+% R:  圆孔的半径 = R / L
+
+Tx = 1;
 % 极坐标 r 和 theta
 r = sqrt(x.^2 + y.^2);
 theta = atan2(y, x);

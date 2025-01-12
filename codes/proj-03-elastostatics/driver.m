@@ -218,3 +218,126 @@ save("ELASTO", "disp", "n_el_x", "n_el_y");
 
 
 % EOF
+
+% visualization
+IEN_tri = zeros(1,1);
+for ee = 1:size(IEN,1)
+    IEN_tri(ee*2-1,1) = IEN(ee,1);
+    IEN_tri(ee*2-1,2) = IEN(ee,2);
+    IEN_tri(ee*2-1,3) = IEN(ee,3);
+    IEN_tri(ee*2,1) = IEN(ee,1);
+    IEN_tri(ee*2,2) = IEN(ee,3);
+    IEN_tri(ee*2,3) = IEN(ee,4);
+end
+
+% Displacement
+
+disp_x=disp(:,1);
+disp_y=disp(:,2);
+
+
+figure(2)
+
+trisurf(IEN_tri, x_coor, y_coor, disp_x);
+colormap jet
+shading interp
+colorbar;
+
+title('Displacement Component x');
+xlabel('x');
+ylabel('y');
+
+az = -61;
+el = 20;
+view(az,el);
+
+
+figure(1)
+[X, Y] = meshgrid(0 : hx : 1, 0 : hy : 1);
+Z = reshape(disp_x, n_np_x, n_np_y)';
+surf(X, Y, Z);
+
+shading interp
+
+title('displacement in x')
+xlabel('x')
+ylabel('y')
+colormap jet;
+colorbar;
+
+az = -61;
+el = 20;
+view(az,el);
+%
+% figure(2)
+% [X, Y] = meshgrid(0 : hh_x : 1, 0 : hh_y : 1);
+% Z = reshape(disp_y, n_np_x, n_np_y)';
+% surf(X, Y, Z);
+% 
+% shading interp
+% 
+% az = -61;
+% el = 20;
+% view(az,el);
+% 
+% title('displacement in y')
+% xlabel('x')
+% ylabel('y')
+
+
+% % Strain and Stress
+% n = n_np;
+% 
+% [ux_dx, uy_dy, ux_dy, uy_dx] = derivative(x_coor, y_coor, disp, IEN);
+% 
+% epsilon_vect = zeros(n,3);
+% for i = 1:n
+%     epsilon_vect(i,1) = ux_dx(i);
+%     epsilon_vect(i,2) = uy_dy(i);
+%     epsilon_vect(i,3) = uy_dx(i) + ux_dy(i);
+% end
+% 
+% sigma_vect=zeros(n,3);
+% for i=1:n
+%     sigma_vect(i,1:3) = DD * epsilon_vect(i,1:3)';
+% end
+% 
+% epsilon11 = epsilon_vect(:,1);
+% epsilon22 = epsilon_vect(:,2);
+% epsilon12 = epsilon_vect(:,3);
+% 
+% sigma11 = sigma_vect(:,1);
+% sigma22 = sigma_vect(:,2);
+% sigma12 = sigma_vect(:,3);
+% 
+% 
+% figure(1)
+% % hold on;
+% trisurf(IEN_tri, x_coor, y_coor, epsilon11);
+% colormap jet
+% shading interp
+% colorbar;
+% axis equal;
+% 
+% title('Strain Component x');
+% xlabel('x');
+% ylabel('y');
+% 
+% 
+% figure(2)
+% % hold on;
+% trisurf(IEN_tri, x_coor, y_coor, sigma11);
+% 
+% colormap jet
+% shading interp
+% colorbar;
+% axis equal;
+% 
+% title('Stress Component x');
+% xlabel('x');
+% ylabel('y');
+
+
+
+
+
