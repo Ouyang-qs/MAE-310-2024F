@@ -20,8 +20,8 @@ sigma_rt = -(Tx / 2) * (1 + 2 * (R^2 ./ r.^2) - 3 * (R^4 ./ r.^4)) .* sin(2 * th
 
 % 转换到直角坐标系
 % 往回转theta角, 所以用-theta
-sigma_xx =  0.5*(sigma_rr + sigma_tt) + 0.5*(sigma_rr - sigma_tt).*cos(2*theta) - sigma_rt * sin(2*theta);
-sigma_yy =  0.5*(sigma_rr + sigma_tt) - 0.5*(sigma_rr - sigma_tt).*cos(2*theta) + sigma_rt * sin(2*theta);
-sigma_xy = -0.5*(sigma_rr - sigma_tt) * sin(2*theta) + sigma_rt .* cos(2*theta);
+sigma_xx =  0.5*(sigma_rr + sigma_tt) + 0.5*(sigma_rr - sigma_tt) * cos(2*theta) - sigma_rt * sin(2*theta);
+sigma_yy =  0.5*(sigma_rr + sigma_tt) - 0.5*(sigma_rr - sigma_tt) * cos(2*theta) + sigma_rt * sin(2*theta);
+sigma_xy =  0.5*(sigma_rr - sigma_tt) * sin(2*theta)  + sigma_rt  * cos(2*theta); % ?
 
 end

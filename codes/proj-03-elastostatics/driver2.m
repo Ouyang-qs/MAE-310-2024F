@@ -12,11 +12,11 @@ n_en = 4;    % number of nodes in an element (quadrilateral)
 n_sd = 2;    % number of spatial dimension
 niu  = 0.3;  % Possion ratio
 E    = 100;  % Young's modulus (unit: GPa)
-Tx   = 10;   % unit: KPa
-R    = .5;   % unit: m
-
-f1 = 0; % no body force
-f2 = 0;
+Tx   = 10;   % traction (unit: KPa)
+R    = 0.5;   % radius (unit: m)
+L    = 2.0;  % length (unit: m)
+f1   = 0;    % no body force
+f2   = 0;
 
 % plane stress
 DD=zeros(3);
@@ -210,52 +210,54 @@ Neumann_BC_y = Neumann_BC_x;
 
 counter = 0;
 for index = 1:size(msh.LINES,1)
-    if msh.LINES(index,3)==8
-        counter = counter+1;
-        Neumann_BC_y(counter,1:2)=[msh.LINES(index,1),msh.LINES(index,2)];
-    end
-end
-
-counter = 0;
-for index = 1:size(msh.LINES,1)
-    if msh.LINES(index,3)==11
+    if msh.LINES(index,3)==11  % LINE with tag #11 on the right (constant x_coor)
         counter = counter+1;
         Neumann_BC_x(counter,1:2)=[msh.LINES(index,1),msh.LINES(index,2)];
     end
 end
 
-s1=size(Neumann_BC_x,1);  % linear element number
-s2=size(Neumann_BC_y,1);
+counter = 0;
+for index = 1:size(msh.LINES,1)
+    if msh.LINES(index,3)==8   % LINE with tag #8 on the top (constant y_coor)
+        counter = counter+1;
+        Neumann_BC_y(counter,1:2)=[msh.LINES(index,1),msh.LINES(index,2)];
+    end
+end
 
+s1 = size(Neumann_BC_x,1);  % number of linear elements
+s2 = size(Neumann_BC_y,1);
+
+% quadrature rule
 qua = 7;
 [xi_1D, weight_1D] = Gauss(qua,-1,1);
 
+% right boundary
 for ss = 1:s1
-    x_ele_line = zeros(2,1);
+    y_ele_node = zeros(2,1);
     h_ele = zeros(2,2);
 
     for aa = 1:2 % n_en=2 
         AA = Neumann_BC_x(ss,aa);
-        x_ele_line(aa) = y_coor(AA);
+        y_ele_node(aa) = y_coor(AA);
     end
     % x_coor(AA) 相等
 
     for ll = 1 : qua
-        x_l = 0.0;
-        dx_dxi = 0.0;
+        y_l = 0.0;
+        dy_dxi = 0.0;
         for aa = 1:2
-            x_l    = x_l    + x_ele_line(aa) * PolyShape(1, aa, xi_1D(ll), 0);
-            dx_dxi = dx_dxi + x_ele_line(aa) * PolyShape(1, aa, xi_1D(ll), 1);
+            y_l    = y_l    + y_ele_node(aa) * PolyShape(1, aa, xi_1D(ll), 0);
+            dy_dxi = dy_dxi + y_ele_node(aa) * PolyShape(1, aa, xi_1D(ll), 1);
         end
-
-        [h1, h2] = h_win(x_coor(AA), x_l, Tx, R);
+        
+        [h1, h2] = h_win(x_coor(AA), y_l, Tx, R);
 
         for ii = 1 : n_sd
             for aa = 1:2
                 if ii == 1
-                    h_ele(ii,aa) = h_ele(ii,aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h1 * dx_dxi;
+                    h_ele(ii,aa) = h_ele(ii,aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h1 * dy_dxi;
                 elseif ii == 2
-                    h_ele(ii,aa) = h_ele(ii,aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h2 * dx_dxi;
+                    h_ele(ii,aa) = h_ele(ii,aa) + weight_1D(ll) * PolyShape(1, aa, xi_1D(ll), 0) * h2 * dy_dxi;
                 end
             end
         end
@@ -272,14 +274,14 @@ for ss = 1:s1
     end
 end
 
+% top boundary
 for ss = 1:s2
-
-    x_ele_line = zeros(2,1);
+    x_ele_node = zeros(2,1);
     h_ele = zeros(2,2);
 
     for aa = 1:2 % n_en=2 
         AA = Neumann_BC_y(ss,aa);
-        x_ele_line(aa) = x_coor(AA);
+        x_ele_node(aa) = x_coor(AA);
     end
     % y_coor(AA) 相等
 
@@ -287,8 +289,8 @@ for ss = 1:s2
         x_l = 0.0;
         dx_dxi = 0.0;
         for aa = 1:2 % 线性插值
-            x_l    = x_l    + x_ele_line(aa) * PolyShape(1, aa, xi_1D(ll), 0);
-            dx_dxi = dx_dxi + x_ele_line(aa) * PolyShape(1, aa, xi_1D(ll), 1);
+            x_l    = x_l    + x_ele_node(aa) * PolyShape(1, aa, xi_1D(ll), 0);
+            dx_dxi = dx_dxi + x_ele_node(aa) * PolyShape(1, aa, xi_1D(ll), 1);
         end
 
         [h1, h2] = h_win(x_l, y_coor(AA), Tx, R);
@@ -314,9 +316,6 @@ for ss = 1:s2
         end
     end
 end
-
-disp(Neumann_BC_x);  % 打印 x 方向的 Neumann 边界条件
-disp(Neumann_BC_y);  % 打印 y 方向的 Neumann 边界条件
 
 % solve the stiffness matrix
 dn = K \ F;
@@ -358,7 +357,7 @@ for ee = 1:size(IEN,1)
     IEN_tri(ee*2,3) = IEN(ee,4);
 end
 
-hold on;
+% hold on;
 trisurf(IEN_tri, x_coor, y_coor, disp_y);
 
 
