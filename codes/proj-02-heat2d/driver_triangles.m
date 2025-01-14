@@ -15,14 +15,14 @@ n_int_eta = 3;
 n_int     = n_int_xi * n_int_eta;
 [xi, eta, weight] = Gauss2D_tri(n_int_xi, n_int_eta);
 
-L2 = zeros(12,1);
+L2 = zeros(4,1);
 H1 = L2; 
 log_h = L2; 
-for iii=1:12
+for iii=1:4
 % mesh generation
 n_en   = 3;               % number of nodes in an element
-n_el_x = iii*10;               % number of elements in x-dir
-n_el_y = iii*10;               % number of elements in y-dir
+n_el_x = iii*50;           % number of elements in x-dir
+n_el_y = iii*50;           % number of elements in y-dir
 n_el   = 2*n_el_x * n_el_y; % total number of elements
 
 n_np_x = n_el_x + 1;      % number of nodal points in x-dir
@@ -210,7 +210,7 @@ H1_error = H1_top / H1_bot;
 
 L2(iii) = L2_error;
 H1(iii) = H1_error;
-log_h(iii)  = log(hx*hy);
+log_h(iii)  = log(sqrt(hx*hy));
 end
 
 
@@ -221,9 +221,11 @@ plot(log_h,log_L2,'b','LineWidth',2);
 hold on
 plot(log_h,log_H1,'r','LineWidth',2);
 
-
-
-
+title('Triangle element')
+xlabel('log(h)')
+ylabel('log(error)')
+legend('L2 Error', 'H1 Error')
+grid on
 
 
 
